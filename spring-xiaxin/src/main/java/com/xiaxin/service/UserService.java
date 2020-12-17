@@ -18,4 +18,8 @@ public class UserService {
 		System.out.println("userService");
 	}
 
+	@Override
+	public String toString() {
+		return "UserService{}";
+	}
 }
