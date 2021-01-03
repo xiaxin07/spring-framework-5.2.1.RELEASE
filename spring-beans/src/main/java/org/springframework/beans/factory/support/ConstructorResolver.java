@@ -128,8 +128,12 @@ class ConstructorResolver {
 		BeanWrapperImpl bw = new BeanWrapperImpl();
 		this.beanFactory.initBeanWrapper(bw);
 
+		// constructorToUse 最后要使用的构造参数
 		Constructor<?> constructorToUse = null;
+		//
 		ArgumentsHolder argsHolderToUse = null;
+
+		// 最后使用的参数值
 		Object[] argsToUse = null;
 
 		if (explicitArgs != null) {
@@ -182,6 +186,7 @@ class ConstructorResolver {
 			}
 
 			// Need to resolve the constructor.
+			// 需要自动装配：多个加了@Autowird(required=false) 的构造方法或者构造方法自动注入
 			boolean autowiring = (chosenCtors != null ||
 					mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
 			ConstructorArgumentValues resolvedValues = null;

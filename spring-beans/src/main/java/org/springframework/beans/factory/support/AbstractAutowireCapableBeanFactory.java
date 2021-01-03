@@ -502,6 +502,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			// 第一次调用后置处理器 aop
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
@@ -559,6 +560,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 1、spring bean——受spring容器管理的对象，可能经过了完整的spring
 			// bean生命周期，最终存在spring容器当中；一个bean一定是个对象
 			// 2、对象——任何符合java语法规则实例化出来的对象，但是一个对象并不一定是spring bean；
+
+			// 实例化对象 第二次调用后置处理器
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		final Object bean = instanceWrapper.getWrappedInstance();
@@ -572,6 +575,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (!mbd.postProcessed) {
 				try {
 					// 处理合并后的beanDefinition
+					// 第三次调用后置处理器
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
@@ -598,6 +602,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						"' to allow for resolving potential circular references");
 			}
 			// 如果支持循环依赖 提前暴露一个工厂    添加一个单例工厂
+			// 第四次调用后置处理器 aop
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 
 
@@ -607,8 +612,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Object exposedObject = bean;
 		try {
 			// 判断属性是否需要注入 继而完成注入属性
+			// 填充属性  自动注入
+			// 第五次 第六次后置处理器的调用
 			populateBean(beanName, mbd, instanceWrapper);
 			// 主要执行各种生命周期回调和aop
+			// 初始化spring
+			// 第七次后置处理器的调用
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -1116,12 +1125,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	/**
 	 * Apply before-instantiation post-processors, resolving whether there is a
 	 * before-instantiation shortcut for the specified bean.
+	 *
 	 * @param beanName the name of the bean
-	 * @param mbd the bean definition for the bean
+	 * @param mbd      the bean definition for the bean
 	 * @return the shortcut-determined bean instance, or {@code null} if none
 	 */
 	@Nullable
 	protected Object resolveBeforeInstantiation(String beanName, RootBeanDefinition mbd) {
+		// beforeInstantiationResolved 处理器是否开始工作
 		Object bean = null;
 		if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
 			// Make sure bean class is actually resolved at this point.
@@ -1202,10 +1213,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		//一种是通过默认的无参构造，
 		//一种是通过推断出来的构造函数
 		// Shortcut when re-creating the same bean...
-		boolean resolved = false;
+		boolean resolved = false; // 表示创建的对象的构造方法没有被解析过
 		boolean autowireNecessary = false;
 		if (args == null) {
 			synchronized (mbd.constructorArgumentLock) {
+				// 被解析过的构造方法或工厂方法
 				if (mbd.resolvedConstructorOrFactoryMethod != null) {
 					resolved = true;
 					autowireNecessary = mbd.constructorArgumentsResolved;
@@ -1225,7 +1237,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Candidate constructors for autowiring?
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
 
-		//
+		// 第二次调用后置处理器
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
 			// 利用推断出来的构造方法实例化对象
@@ -1413,7 +1425,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// to support styles of field injection.
 		boolean continueWithPropertyPopulation = true;
 
-		// 判断是否需要完后才能属性注入 如果不需要就设置continueWithPropertyPopulation为false
+		// 判断是否需要完成属性注入 如果不需要就设置continueWithPropertyPopulation为false
 		// 程序员没有扩展 那么continueWithPropertyPopulation为true
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
@@ -1823,7 +1835,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}, getAccessControlContext());
 		}
 		else {
-			// 执行aware
+			// 执行实现了aware的方法
 			invokeAwareMethods(beanName, bean);
 		}
 
